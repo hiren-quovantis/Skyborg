@@ -46,21 +46,23 @@ namespace Skyborg.Adapters
             calendarEvent.Location = calendarDetail.Location;
 
             calendarEvent.Start = new EventDateTime();
-            calendarEvent.Start.DateTime = calendarDetail.StartTime;
+            calendarEvent.Start.DateTime = calendarDetail.StartDate.Add(calendarDetail.StartTime);
 
             calendarEvent.End = new EventDateTime();
-            calendarEvent.End.DateTime = calendarDetail.EndTime;
-
-            calendarEvent.Attendees = new List<EventAttendee>();
-
+            calendarEvent.End.DateTime = calendarDetail.StartDate.AddHours(1);
+            
             calendarEvent.Reminders = new Event.RemindersData();
             calendarEvent.Reminders.UseDefault = true;
 
-            foreach (string attendee in calendarDetail.Attendees)
+            if (calendarDetail.Attendees != null && calendarDetail.Attendees.Count > 0)
             {
-                EventAttendee eventAttendee = new EventAttendee();
-                eventAttendee.Email = attendee;
-                calendarEvent.Attendees.Add(eventAttendee);
+                calendarEvent.Attendees = new List<EventAttendee>();
+                foreach (string attendee in calendarDetail.Attendees)
+                {
+                    EventAttendee eventAttendee = new EventAttendee();
+                    eventAttendee.Email = attendee;
+                    calendarEvent.Attendees.Add(eventAttendee);
+                }
             }
 
             EventsResource.InsertRequest request = service.Events.Insert(calendarEvent, "primary");

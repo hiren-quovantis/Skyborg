@@ -1,5 +1,6 @@
 ﻿using Microsoft.Bot.Builder.Dialogs;
 using System;
+using Chronic;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -14,6 +15,7 @@ using Microsoft.Bot.Builder.Luis.Models;
 using Microsoft.Bot.Builder.Luis;
 using System.Globalization;
 using Skyborg.Adapters;
+using Microsoft.Bot.Builder.FormFlow;
 
 namespace Skyborg.Dialogs
 {
@@ -40,49 +42,23 @@ namespace Skyborg.Dialogs
         [LuisIntent("Get Event List")]
         public async Task GetEventList(IDialogContext context, LuisResult result)
         {
-            Chronic.Parser parser = new Chronic.Parser();
-            EntityRecommendation dateValue = new EntityRecommendation();
-
-            var entities = new List<EntityRecommendation>(result.Entities);
-
-            result.TryFindEntity("builtin.datetime.date", out dateValue);
-
-            var dateResult = parser.Parse(dateValue.Entity);
+            var dateResult = FetchDate(result);
 
             if (dateResult != null)
             {
+                await context.PostAsync("Please wait, while I retrieve your schedule");
+
                 var reply = context.MakeMessage();
 
                 reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
                 reply.Attachments = this.GetEventsByDateRange(dateResult.Start.Value, dateResult.End.Value);
 
                 await context.PostAsync(reply);
-
-                context.Wait(this.MessageReceived);
             }
-
-
-            /*
-        if(entities.Any(entity => entity.Type == "builtin.datetime.date"))
-        {
-            var dateEntity = entities.Where(entity => entity.Type == "builtin.datetime.date").First();
-
-            var date = dateEntity.Resolution.First().Value ?? null;
-
-            if(!string.IsNullOrEmpty(date))
+            else
             {
-                var dateValue = DateTime.MinValue;
-
-                Chronic.Parser parser = new Chronic.Parser();
-                DateTime.TryParse(date, out dateValue);
-
-                if(dateValue != DateTime.MinValue)
-                {
-                    await context.PostAsync(this.GetEventsByDate(dateValue));
-                }
+                await context.PostAsync("Sorry! I don't understand what you want");
             }
-        }
-        */
 
             context.Wait(MessageReceived);
         }
@@ -90,37 +66,57 @@ namespace Skyborg.Dialogs
         [LuisIntent("Create Event")]
         public async Task CreateEvent(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync("Event created successfully");
+            await context.PostAsync("Allow me to create an event for you (y)");
+            
+            CalendarModel eventDetail = new CalendarModel();
 
-            context.Wait(this.MessageReceived);
+            var startDate = FetchDate(result);
+
+            if(startDate != null && startDate.Start.HasValue)
+            {
+                eventDetail.StartDate = startDate.Start.Value;
+            }
+
+            var summary = FetchString(result, "EventName");
+            if (!string.IsNullOrEmpty(summary))
+            {
+                eventDetail.Summary = summary;
+            }
+
+            var startTime = FetchTime(result);
+            if(startTime != null && startTime.Start.HasValue)
+            {
+                eventDetail.StartTime = startTime.Start.Value.TimeOfDay;
+            }
+
+            //FormDialog<CalendarModel> dialog = new FormDialog<CalendarModel>(eventDetail, this.BuildCreateEventForm, FormOptions.PromptInStart);
+
+            //var dialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptInStart);
+
+            //context.Call<CalendarModel>(dialog, ResumeAfterHotelsFormDialog);
+
+            //context.Call(dialog, this.ResumeAfterHotelsFormDialog);
+
+//            context.Wait(this.MessageReceived);
         }
 
-        /*
-        private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
+        public IForm<CalendarModel> BuildCreateEventForm()
         {
-            var message = context.MakeMessage();
+            OnCompletionAsyncDelegate<CalendarModel> createEvent = async (context, state) =>
+            {
+                await context.PostAsync("Creating events ...");
+            };
 
-            message.Text = this.GetTodaysEvent();
-
-            await context.PostAsync(message);
-
-            context.Wait(this.MessageReceivedAsync);
+            return new FormBuilder<CalendarModel>()
+                        .AddRemainingFields()
+                        .OnCompletion(createEvent)
+                        .Build(); 
         }
 
-    */
-        //private Attachment GetSigninCard()
-        //{
-
-        //    var signinCard = new SigninCard
-        //    {
-        //        Text = "Authenticate yourself on Google First!",
-        //        Buttons = new List<CardAction> {
-        //            new CardAction(ActionTypes.Signin, "Sign-in",
-        //                value: "http://localhost:25738/Account/Authenticate?userId=" + this.user.Name  + "&name=" + this.user.EmailId) }
-        //    };
-
-        //    return signinCard.ToAttachment();
-        //}
+        private async Task ResumeAfterHotelsFormDialog(IDialogContext context, IAwaitable<CalendarModel> result)
+        {
+            await context.PostAsync("Evenmt Created");
+        }
 
         private IList<Attachment> GetEventsByDateRange(DateTime startdate, DateTime enddate)
         {
@@ -150,9 +146,7 @@ namespace Skyborg.Dialogs
                     attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, description,
                         new CardAction(ActionTypes.OpenUrl, "View Event", value: eventItem.HtmlLink)));
 
-
-                    //response += string.Format("{0} at ({1} - {2}) {3} ", eventItem.Summary, FormatDate(eventstartdate), FormatDate(eventenddate), Environment.NewLine);
-                }
+              }
             }
 
             return attachments;
@@ -175,6 +169,41 @@ namespace Skyborg.Dialogs
         private static string FormatDate(string datetime)
         {
             return Convert.ToDateTime(datetime).ToString("hh:mm:ss tt", CultureInfo.InvariantCulture);
+        }
+
+        private static Span FetchDate(LuisResult result)
+        {
+            Parser parser = new Parser();
+
+            EntityRecommendation dateValue = new EntityRecommendation();
+
+            if (result.TryFindEntity("builtin.datetime.date", out dateValue))
+            {
+                return parser.Parse(dateValue.Entity);
+            }
+            return null;
+        }
+
+        private static Span FetchTime(LuisResult result)
+        {
+            Parser parser = new Parser();
+
+            EntityRecommendation dateValue = new EntityRecommendation();
+
+            if (result.TryFindEntity("builtin.datetime.time", out dateValue))
+            {
+                return parser.Parse(dateValue.Entity);
+            }
+            return null;
+        }
+
+        private static string FetchString(LuisResult result, string type)
+        {
+            EntityRecommendation value = new EntityRecommendation();
+
+            result.TryFindEntity(type, out value);
+
+            return (value.Entity);
         }
     }
 }

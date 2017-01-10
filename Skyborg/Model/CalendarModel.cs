@@ -16,10 +16,13 @@ namespace Skyborg.Model
         public string Location { get; set; }
 
         [Prompt("Please enter valid {&}")]
-        public DateTime StartTime { get; set; }
+        public DateTime StartDate { get; set; }
 
         [Prompt("Please enter valid {&}")]
-        public DateTime EndTime { get; set;}
+        public TimeSpan StartTime { get; set; }
+
+        //[Prompt("Please enter valid {&}")]
+        //public DateTime EndTime { get; set;}
 
         [Prompt("Please enter valid Email for {&}")]
         public List<string> Attendees { get; set; }
