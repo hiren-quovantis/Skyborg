@@ -1,0 +1,45 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skyborg.Bot", "Skyborg\Skyborg.Bot.csproj", "{A8BA1066-5695-4D71-ABB4-65E5A5E0C3D4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Skyborg.Web", "Skyborg.Web", "{A949478E-4C3C-477F-A8D0-CF107FE790E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skyborg.Web.Main", "Skyborg.Web.Main\Skyborg.Web.Main.csproj", "{9EB3457C-43DD-4976-8F53-5E16E9933769}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skyborg.Persistance", "Skyborg.Persistance\Skyborg.Persistance.csproj", "{28E3079E-6FDA-45AD-BAE1-915EDE5A6C1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Skyborg.Model", "Skyborg.Model\Skyborg.Model.csproj", "{4BC95C71-B2CD-46D5-8CE1-5E87D6A61074}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A8BA1066-5695-4D71-ABB4-65E5A5E0C3D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8BA1066-5695-4D71-ABB4-65E5A5E0C3D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8BA1066-5695-4D71-ABB4-65E5A5E0C3D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8BA1066-5695-4D71-ABB4-65E5A5E0C3D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EB3457C-43DD-4976-8F53-5E16E9933769}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EB3457C-43DD-4976-8F53-5E16E9933769}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EB3457C-43DD-4976-8F53-5E16E9933769}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EB3457C-43DD-4976-8F53-5E16E9933769}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28E3079E-6FDA-45AD-BAE1-915EDE5A6C1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28E3079E-6FDA-45AD-BAE1-915EDE5A6C1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28E3079E-6FDA-45AD-BAE1-915EDE5A6C1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28E3079E-6FDA-45AD-BAE1-915EDE5A6C1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4BC95C71-B2CD-46D5-8CE1-5E87D6A61074}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BC95C71-B2CD-46D5-8CE1-5E87D6A61074}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BC95C71-B2CD-46D5-8CE1-5E87D6A61074}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BC95C71-B2CD-46D5-8CE1-5E87D6A61074}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9EB3457C-43DD-4976-8F53-5E16E9933769} = {A949478E-4C3C-477F-A8D0-CF107FE790E9}
+	EndGlobalSection
+EndGlobal
