@@ -38,7 +38,7 @@ namespace Skyborg.Adapters
             return request.Execute();
         }
 
-        public void CreateEvent(CalendarModel calendarDetail)
+        public Event CreateEvent(CalendarModel calendarDetail)
         {
             Event calendarEvent = new Event();
 
@@ -49,7 +49,7 @@ namespace Skyborg.Adapters
             calendarEvent.Start.DateTime = calendarDetail.StartDate.Add(calendarDetail.StartTime);
 
             calendarEvent.End = new EventDateTime();
-            calendarEvent.End.DateTime = calendarDetail.StartDate.AddHours(1);
+            calendarEvent.End.DateTime = calendarEvent.Start.DateTime.Value.AddHours(1);
             
             calendarEvent.Reminders = new Event.RemindersData();
             calendarEvent.Reminders.UseDefault = true;
@@ -65,8 +65,16 @@ namespace Skyborg.Adapters
                 }
             }
 
-            EventsResource.InsertRequest request = service.Events.Insert(calendarEvent, "primary");
-            request.Execute();
+            try
+            {
+                EventsResource.InsertRequest request = service.Events.Insert(calendarEvent, "primary");
+                return request.Execute();
+            }
+            catch(Exception e)
+            {
+                throw e;
+            }
+            
 
         }
     }

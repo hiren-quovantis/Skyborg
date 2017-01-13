@@ -42,7 +42,7 @@ namespace Skyborg.Dialogs
         [LuisIntent("Get Event List")]
         public async Task GetEventList(IDialogContext context, LuisResult result)
         {
-            var dateResult = FetchDate(result);
+            var dateResult = FetchDate(result) ?? FetchTime(result);
 
             if (dateResult != null)
             {
@@ -89,15 +89,23 @@ namespace Skyborg.Dialogs
                 eventDetail.StartTime = startTime.Start.Value.TimeOfDay;
             }
 
-            //FormDialog<CalendarModel> dialog = new FormDialog<CalendarModel>(eventDetail, this.BuildCreateEventForm, FormOptions.PromptInStart);
+            if (!string.IsNullOrEmpty(eventDetail.Summary) && eventDetail.StartDate != DateTime.MinValue)
+            {
+                Event calendarEvent = adapter.CreateEvent(eventDetail);
 
-            //var dialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptInStart);
+                var reply = context.MakeMessage();
 
-            //context.Call<CalendarModel>(dialog, ResumeAfterHotelsFormDialog);
+                reply.Summary = "Event Created Successfully";
+                reply.Text = "Access it here: " + calendarEvent.HtmlLink;
 
-            //context.Call(dialog, this.ResumeAfterHotelsFormDialog);
+                await context.PostAsync(reply);
+            }
+            else
+            {
+                await context.PostAsync("Please provide valid summary, starttime and date");
+            }
 
-//            context.Wait(this.MessageReceived);
+            context.Wait(MessageReceived);
         }
 
         public IForm<CalendarModel> BuildCreateEventForm()
@@ -115,7 +123,7 @@ namespace Skyborg.Dialogs
 
         private async Task ResumeAfterHotelsFormDialog(IDialogContext context, IAwaitable<CalendarModel> result)
         {
-            await context.PostAsync("Evenmt Created");
+            await context.PostAsync("Event Created");
         }
 
         private IList<Attachment> GetEventsByDateRange(DateTime startdate, DateTime enddate)
@@ -141,10 +149,14 @@ namespace Skyborg.Dialogs
                         eventenddate = eventItem.End.Date;
                     }
 
-                    string description = (eventItem.Description.Length > 50) ? eventItem.Description.Substring(0, 50) : eventItem.Description;
+                    string description = string.Empty;
+                    if(!string.IsNullOrEmpty(description))
+                    {
+                        description = (eventItem.Description.Length > 50) ? eventItem.Description.Substring(0, 50) : eventItem.Description;
+                    }
 
                     attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, description,
-                        new CardAction(ActionTypes.OpenUrl, "View Event", value: eventItem.HtmlLink)));
+                        new CardAction(ActionTypes.OpenUrl , "View Event", value: eventItem.HtmlLink)));
 
               }
             }
