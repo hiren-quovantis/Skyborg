@@ -1,21 +1,16 @@
-﻿using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
-using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using Microsoft.Bot.Builder.Dialogs;
 using Skyborg.Dialogs;
-using Skyborg.Persistance;
-using Skyborg.Model;
 using Google.Apis.Auth.OAuth2;
 using System.Threading;
 using Skyborg.Persistance.DataStore;
 using Google.Apis.Calendar.v3;
+using Skyborg.Adapters.NLP;
+using Skyborg.Model;
 
 namespace Skyborg
 {
@@ -37,14 +32,12 @@ namespace Skyborg
 
                 //GoogleWebAuthorizationBroker.AuthorizeAsync()
 
-                UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets { ClientId = "551969187605-r8h6f3pmge84rp8h81ud9v7pf7kn29sv.apps.googleusercontent.com",
-                                                                                            ClientSecret = "NZqX0IhmKuxuQGYE72K0UBN1" }
-                                                                                             , scopes
-                                                                                             , activity.From.Id
-                                                                                             , CancellationToken.None
-                                                                                             , new EFDataStore()).Result;
+                LUISAdaptor adaptor = new LUISAdaptor();
+                IntentModel intent = await adaptor.Execute(activity.Text);
 
-                await Conversation.SendAsync(activity, () => new CalendarDialog(credential));
+                await Conversation.SendAsync(activity, () => new RootDialog(intent, activity.From.Id));
+
+                // await Conversation.SendAsync(activity, () => new CalendarDialog(credential));
             }
             else
             {

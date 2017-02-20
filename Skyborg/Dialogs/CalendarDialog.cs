@@ -19,27 +19,120 @@ using Microsoft.Bot.Builder.FormFlow;
 
 namespace Skyborg.Dialogs
 {
-    [LuisModel("e41c3be9-a10d-466c-8dbc-54b64a34b062", "23cc8b8e5d34496aa7e665e8d1bfb7a8")]
     [Serializable]
-    public class CalendarDialog : LuisDialog<object>
+    public class CalendarDialog : IDialog<object>
     {
-
+       // [NonSerialized]
         private CalendarAdapter adapter;
 
-        public CalendarDialog(UserCredential credential)
+        private IntentModel intent;
+
+        public CalendarDialog(UserCredential credential, IntentModel intent)
         {
             this.adapter = new CalendarAdapter(credential);
-
+            this.intent = intent;
         }
 
-        [LuisIntent("")]
-        public async Task None(IDialogContext context, LuisResult result)
+        public async Task StartAsync(IDialogContext context)
+        {
+            await context.PostAsync("Welcome to the Google Calendar!");
+            context.Wait(this.MessageReceivedAsync);
+        }
+
+        public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
+        {
+            LuisResult luisresult = new LuisResult();
+            luisresult.Entities = intent.Model;
+
+            //var message = await result;
+
+            switch (intent.IntentName)
+            {
+                case "list":
+                    await GetEventList(context, luisresult);
+                    context.Done<object>(null);
+                    //context.Wait(MessageReceived);
+                    break;
+                case "create":
+                    var eventDetail = HydrateEventObject(luisresult);
+
+                    var createEventDialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptFieldsWithValues);
+                    context.Call(createEventDialog, this.ResumeAfterEventDialog);
+
+                    break;
+                default:
+                    await None(context);
+                    break;
+            }
+
+            context.Wait(this.MessageReceivedAsync);
+        }
+
+        //public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
+        //{
+        //    LuisResult luisresult = new LuisResult();
+        //    luisresult.Entities = intent.Model;
+
+        //    var message = await result;
+
+        //    switch(intent.IntentName)
+        //    {
+        //        case "list":
+        //            await GetEventList(context, luisresult);
+        //            break;
+        //        case "create":
+        //            var eventDetail = HydrateEventObject(luisresult);
+
+        //            var createEventDialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptFieldsWithValues);
+        //            context.Call(createEventDialog, this.ResumeAfterEventDialog);
+
+        //            break;
+        //        default:
+        //            await None(context);
+        //            break;
+        //    }
+        //}
+
+        private CalendarModel HydrateEventObject(LuisResult result)
+        {
+            CalendarModel eventDetail = new CalendarModel();
+
+            var startDate = FetchDate(result);
+
+            if (startDate != null && startDate.Start.HasValue)
+            {
+                eventDetail.StartDate = startDate.Start.Value;
+            }
+
+            var summary = FetchString(result, "EventName");
+            if (!string.IsNullOrEmpty(summary))
+            {
+                eventDetail.Summary = summary;
+            }
+
+            var startTime = FetchTime(result);
+            if (startTime != null && startTime.Start.HasValue)
+            {
+                eventDetail.StartTime = startTime.Start.Value.TimeOfDay;
+            }
+
+            return eventDetail;
+        }
+
+        private async Task ResumeAfterEventDialog(IDialogContext context, IAwaitable<CalendarModel> result)
+        {
+            var searchQuery = await result;
+
+            //await context.PostAsync("Hope you liked my Work !!");
+            context.Done<object>(null);
+        }
+
+
+        public async Task None(IDialogContext context)
         {
             await context.PostAsync("Sorry! I don't understand what you want");
-            context.Wait(MessageReceived);
         }
 
-        [LuisIntent("Get Event List")]
         public async Task GetEventList(IDialogContext context, LuisResult result)
         {
             var dateResult = FetchDate(result) ?? FetchTime(result);
@@ -60,34 +153,13 @@ namespace Skyborg.Dialogs
                 await context.PostAsync("Sorry! I don't understand what you want");
             }
 
-            context.Wait(MessageReceived);
+
+            //context.Wait(this.MessageReceivedAsync);
         }
 
-        [LuisIntent("Create Event")]
-        public async Task CreateEvent(IDialogContext context, LuisResult result)
+        public async Task CreateEvent(IDialogContext context, CalendarModel eventDetail)
         {
             await context.PostAsync("Allow me to create an event for you (y)");
-            
-            CalendarModel eventDetail = new CalendarModel();
-
-            var startDate = FetchDate(result);
-
-            if(startDate != null && startDate.Start.HasValue)
-            {
-                eventDetail.StartDate = startDate.Start.Value;
-            }
-
-            var summary = FetchString(result, "EventName");
-            if (!string.IsNullOrEmpty(summary))
-            {
-                eventDetail.Summary = summary;
-            }
-
-            var startTime = FetchTime(result);
-            if(startTime != null && startTime.Start.HasValue)
-            {
-                eventDetail.StartTime = startTime.Start.Value.TimeOfDay;
-            }
 
             if (!string.IsNullOrEmpty(eventDetail.Summary) && eventDetail.StartDate != DateTime.MinValue)
             {
@@ -105,27 +177,26 @@ namespace Skyborg.Dialogs
                 await context.PostAsync("Please provide valid summary, starttime and date");
             }
 
-            context.Wait(MessageReceived);
+            //context.Wait(this.MessageReceivedAsync);
         }
 
         public IForm<CalendarModel> BuildCreateEventForm()
         {
-            OnCompletionAsyncDelegate<CalendarModel> createEvent = async (context, state) =>
+            OnCompletionAsyncDelegate<CalendarModel> createEventtemp = async (context, state) =>
             {
                 await context.PostAsync("Creating events ...");
+                await CreateEvent(context, state);
             };
 
             return new FormBuilder<CalendarModel>()
+                        .Message("Creating Event for You . . .")
                         .AddRemainingFields()
-                        .OnCompletion(createEvent)
-                        .Build(); 
+                        .OnCompletion(createEventtemp)
+                        .Build();
         }
 
-        private async Task ResumeAfterHotelsFormDialog(IDialogContext context, IAwaitable<CalendarModel> result)
-        {
-            await context.PostAsync("Event Created");
-        }
-
+        #region "Private Helper"
+        
         private IList<Attachment> GetEventsByDateRange(DateTime startdate, DateTime enddate)
         {
             string response = string.Empty;
@@ -150,15 +221,15 @@ namespace Skyborg.Dialogs
                     }
 
                     string description = string.Empty;
-                    if(!string.IsNullOrEmpty(description))
+                    if (!string.IsNullOrEmpty(description))
                     {
                         description = (eventItem.Description.Length > 50) ? eventItem.Description.Substring(0, 50) : eventItem.Description;
                     }
 
                     attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, description,
-                        new CardAction(ActionTypes.OpenUrl , "View Event", value: eventItem.HtmlLink)));
+                        new CardAction(ActionTypes.OpenUrl, "View Event", value: eventItem.HtmlLink)));
 
-              }
+                }
             }
 
             return attachments;
@@ -215,7 +286,13 @@ namespace Skyborg.Dialogs
 
             result.TryFindEntity(type, out value);
 
-            return (value.Entity);
+            if(value != null)
+            {
+                return (value.Entity);
+            }
+            return string.Empty;
         }
+
+        #endregion
     }
 }

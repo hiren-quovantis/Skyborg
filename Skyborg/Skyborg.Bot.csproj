@@ -151,13 +151,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Adapters\CalendarAdapter.cs" />
+    <Compile Include="Adapters\NLP\LUISAdaptor.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Common\BotConstants.cs" />
     <Compile Include="Controllers\MessagesController.cs" />
     <Compile Include="Dialogs\CalendarDialog.cs" />
+    <Compile Include="Dialogs\RootDialog.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Model\CalendarModel.cs" />
+    <Compile Include="Model\IntentModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

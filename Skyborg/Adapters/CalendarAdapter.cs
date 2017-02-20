@@ -10,8 +10,10 @@ using System.Web;
 
 namespace Skyborg.Adapters
 {
+    [Serializable]
     public class CalendarAdapter
     {
+        [NonSerialized]
         CalendarService service;
         public CalendarAdapter(UserCredential credential)
         {
