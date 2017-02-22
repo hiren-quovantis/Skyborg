@@ -50,22 +50,25 @@ namespace Skyborg.Dialogs
             {
                 case "list":
                     await GetEventList(context, luisresult);
-                    context.Done<object>(null);
-                    //context.Wait(MessageReceived);
+                    context.Done(true);
+                    //context.Wait(this.MessageReceivedAsync);
                     break;
                 case "create":
                     var eventDetail = HydrateEventObject(luisresult);
 
                     var createEventDialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptFieldsWithValues);
                     context.Call(createEventDialog, this.ResumeAfterEventDialog);
+                    context.Done(true);
 
                     break;
                 default:
                     await None(context);
+                    context.Done<object>(null);
+                    context.Wait(this.MessageReceivedAsync);
                     break;
             }
+            
 
-            context.Wait(this.MessageReceivedAsync);
         }
 
         //public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)

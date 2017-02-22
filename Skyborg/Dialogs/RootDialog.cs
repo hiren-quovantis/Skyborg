@@ -14,11 +14,14 @@ using System.Web;
 
 namespace Skyborg.Dialogs
 {
-    [Serializable]
+    //[Serializable]
     public class RootDialog : IDialog<object>
     {
+        //[NonSerialized]
         IntentModel intent = null;
+
         String SenderId = string.Empty;
+
         string[] Scopes = { CalendarService.Scope.Calendar };
 
         public RootDialog(IntentModel intent, string senderId)
@@ -65,14 +68,14 @@ namespace Skyborg.Dialogs
 
         private async Task ResumeAfterOptionDialog(IDialogContext context, IAwaitable<object> result)
         {
-            try
-            {
-                var message = await result;
-            }
-            catch (Exception ex)
-            {
-                await context.PostAsync($"Error: {ex.Message}");
-            }
+            //try
+            //{
+            //    var message = await result;
+            //}
+            //catch (Exception ex)
+            //{
+            //    await context.PostAsync($"Error: {ex.Message}");
+            //}
             context.Wait(this.MessageReceivedAsync);
         }
     }

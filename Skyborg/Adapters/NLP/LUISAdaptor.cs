@@ -2,6 +2,7 @@
 using Microsoft.Bot.Builder.Luis.Models;
 using Skyborg.Common;
 using Skyborg.Model;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Skyborg.Adapters.NLP
@@ -20,8 +21,8 @@ namespace Skyborg.Adapters.NLP
         public async Task<IntentModel> Execute(string query)
         {
             IntentModel intent = null;
-            
-            LuisResult result = await service.QueryAsync(query);
+
+            LuisResult result = await service.QueryAsync(query, CancellationToken.None);
             
             if(result.Intents != null && result.Intents.Count > 0)
             {
