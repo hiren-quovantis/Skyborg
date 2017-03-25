@@ -16,21 +16,24 @@ using Microsoft.Bot.Builder.Luis;
 using System.Globalization;
 using Skyborg.Adapters;
 using Microsoft.Bot.Builder.FormFlow;
+using Skyborg.Common;
+using Skyborg.Persistance.DataStore;
+using System.Threading;
 
 namespace Skyborg.Dialogs
 {
     [Serializable]
     public class CalendarDialog : IDialog<object>
     {
-       // [NonSerialized]
-        private CalendarAdapter adapter;
+        string[] Scopes = { CalendarService.Scope.Calendar };
 
-        private IntentModel intent;
+       // UserCredential credential;
 
-        public CalendarDialog(UserCredential credential, IntentModel intent)
+
+
+        public CalendarDialog()
         {
-            this.adapter = new CalendarAdapter(credential);
-            this.intent = intent;
+            
         }
 
         public async Task StartAsync(IDialogContext context)
@@ -41,16 +44,20 @@ namespace Skyborg.Dialogs
 
         public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
         {
+            IntentModel intent;
+            context.UserData.TryGetValue<IntentModel>("Intent", out intent);
+            
             LuisResult luisresult = new LuisResult();
             luisresult.Entities = intent.Model;
 
-            //var message = await result;
+            var message = await result;
+
 
             switch (intent.IntentName)
             {
                 case "list":
                     await GetEventList(context, luisresult);
-                    context.Done(true);
+                    context.Done<object>(null);
                     //context.Wait(this.MessageReceivedAsync);
                     break;
                 case "create":
@@ -58,43 +65,18 @@ namespace Skyborg.Dialogs
 
                     var createEventDialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptFieldsWithValues);
                     context.Call(createEventDialog, this.ResumeAfterEventDialog);
-                    context.Done(true);
+                    //context.Done<object>(null);
 
                     break;
                 default:
                     await None(context);
                     context.Done<object>(null);
-                    context.Wait(this.MessageReceivedAsync);
+                    //context.Wait(this.MessageReceivedAsync);
                     break;
             }
             
 
         }
-
-        //public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
-        //{
-        //    LuisResult luisresult = new LuisResult();
-        //    luisresult.Entities = intent.Model;
-
-        //    var message = await result;
-
-        //    switch(intent.IntentName)
-        //    {
-        //        case "list":
-        //            await GetEventList(context, luisresult);
-        //            break;
-        //        case "create":
-        //            var eventDetail = HydrateEventObject(luisresult);
-
-        //            var createEventDialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptFieldsWithValues);
-        //            context.Call(createEventDialog, this.ResumeAfterEventDialog);
-
-        //            break;
-        //        default:
-        //            await None(context);
-        //            break;
-        //    }
-        //}
 
         private CalendarModel HydrateEventObject(LuisResult result)
         {
@@ -126,7 +108,7 @@ namespace Skyborg.Dialogs
         {
             var searchQuery = await result;
 
-            //await context.PostAsync("Hope you liked my Work !!");
+            await context.PostAsync("Hope you liked my Work !!");
             context.Done<object>(null);
         }
 
@@ -138,6 +120,20 @@ namespace Skyborg.Dialogs
 
         public async Task GetEventList(IDialogContext context, LuisResult result)
         {
+            //UserCredential credential;
+            //context.UserData.TryGetValue<UserCredential>("Credential", out credential);
+            UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
+            {
+                ClientId = BotConstants.GoogleClientId,
+                ClientSecret = BotConstants.GoogleClientSecret
+            }
+                                                            , Scopes
+                                                            , context.Activity.From.Id
+                                                            , CancellationToken.None
+                                                            , new EFDataStore()).Result;
+
+            CalendarAdapter adapter = new CalendarAdapter(credential);
+
             var dateResult = FetchDate(result) ?? FetchTime(result);
 
             if (dateResult != null)
@@ -147,7 +143,7 @@ namespace Skyborg.Dialogs
                 var reply = context.MakeMessage();
 
                 reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
-                reply.Attachments = this.GetEventsByDateRange(dateResult.Start.Value, dateResult.End.Value);
+                reply.Attachments = this.GetEventsByDateRange(adapter, dateResult.Start.Value, dateResult.End.Value);
 
                 await context.PostAsync(reply);
             }
@@ -162,10 +158,24 @@ namespace Skyborg.Dialogs
 
         public async Task CreateEvent(IDialogContext context, CalendarModel eventDetail)
         {
+            UserCredential credential;
+
             await context.PostAsync("Allow me to create an event for you (y)");
 
             if (!string.IsNullOrEmpty(eventDetail.Summary) && eventDetail.StartDate != DateTime.MinValue)
             {
+
+                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
+                {
+                    ClientId = BotConstants.GoogleClientId,
+                    ClientSecret = BotConstants.GoogleClientSecret
+                }
+                                                            , Scopes
+                                                            , context.Activity.From.Id
+                                                            , CancellationToken.None
+                                                            , new EFDataStore()).Result;
+
+                CalendarAdapter adapter = new CalendarAdapter(credential);
                 Event calendarEvent = adapter.CreateEvent(eventDetail);
 
                 var reply = context.MakeMessage();
@@ -200,7 +210,7 @@ namespace Skyborg.Dialogs
 
         #region "Private Helper"
         
-        private IList<Attachment> GetEventsByDateRange(DateTime startdate, DateTime enddate)
+        private IList<Attachment> GetEventsByDateRange(CalendarAdapter adapter, DateTime startdate, DateTime enddate)
         {
             string response = string.Empty;
 
@@ -229,7 +239,27 @@ namespace Skyborg.Dialogs
                         description = (eventItem.Description.Length > 50) ? eventItem.Description.Substring(0, 50) : eventItem.Description;
                     }
 
-                    attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, description,
+                    string responseStatus = eventItem.Attendees.First(a => a.Self == true).ResponseStatus;
+
+                    switch(responseStatus)
+                    {
+                        case "needsAction":
+                            responseStatus = "You have not responded yet";
+                            break;
+                        case "declined":
+                            responseStatus = "You have declined";
+                            break;
+                        case "tentative":
+                            responseStatus = "You have tentatively accepted";
+                            break;
+                        case "accepted":
+                            responseStatus = "You have accepted";
+                            break;
+                        default:
+                            break;
+                    }
+
+                    attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, responseStatus,
                         new CardAction(ActionTypes.OpenUrl, "View Event", value: eventItem.HtmlLink)));
 
                 }

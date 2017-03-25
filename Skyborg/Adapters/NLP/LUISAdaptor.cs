@@ -26,9 +26,12 @@ namespace Skyborg.Adapters.NLP
             
             if(result.Intents != null && result.Intents.Count > 0)
             {
-                if(result.Intents[0].Score.Value > 0.7)
+                if (result.Intents[0].Intent.ToUpperInvariant() != "NONE")
                 {
+                    //if(result.Intents[0].Score.Value > 0.7)
+                    //{
                     intent = new IntentModel(result);
+                    //}
                 }
             }
             return intent;

@@ -31,11 +31,10 @@ namespace Skyborg
                 // await Conversation.SendAsync(activity, () => new CalendarDialog(user));   
 
                 //GoogleWebAuthorizationBroker.AuthorizeAsync()
+                
+                await Conversation.SendAsync(activity, () => new RootDialog());
 
-                LUISAdaptor adaptor = new LUISAdaptor();
-                IntentModel intent = await adaptor.Execute(activity.Text);
-
-                await Conversation.SendAsync(activity, () => new RootDialog(intent, activity.From.Id));
+                //await Conversation.SendAsync(activity, () => new RootDialog(intent, activity.From.Id));
 
                 // await Conversation.SendAsync(activity, () => new CalendarDialog(credential));
             }

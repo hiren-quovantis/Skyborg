@@ -9,6 +9,10 @@ namespace Skyborg.Model
     [Serializable]
     public class IntentModel //where T : object
     {
+        public IntentModel()
+        {
+        }
+
         public IntentModel(LuisResult result)
         {
             this.OriginalIntent = result.Intents[0].Intent;

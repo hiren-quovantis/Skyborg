@@ -25,6 +25,6 @@ namespace Skyborg.Model
         //public DateTime EndTime { get; set;}
 
         [Prompt("Please enter valid Email for {&}")]
-        public List<string> Attendees { get; set; }
+        public string Attendees { get; set; }
     }
 }

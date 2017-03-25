@@ -56,13 +56,15 @@ namespace Skyborg.Adapters
             calendarEvent.Reminders = new Event.RemindersData();
             calendarEvent.Reminders.UseDefault = true;
 
-            if (calendarDetail.Attendees != null && calendarDetail.Attendees.Count > 0)
+            calendarEvent.Creator = new Event.CreatorData();
+
+            if (!string.IsNullOrEmpty(calendarDetail.Attendees))
             {
                 calendarEvent.Attendees = new List<EventAttendee>();
-                foreach (string attendee in calendarDetail.Attendees)
+                foreach (string attendee in calendarDetail.Attendees.Split(','))
                 {
                     EventAttendee eventAttendee = new EventAttendee();
-                    eventAttendee.Email = attendee;
+                    eventAttendee.Email = attendee.Trim();
                     calendarEvent.Attendees.Add(eventAttendee);
                 }
             }

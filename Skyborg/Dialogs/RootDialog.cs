@@ -2,6 +2,7 @@
 using Google.Apis.Calendar.v3;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Connector;
+using Skyborg.Adapters.NLP;
 using Skyborg.Common;
 using Skyborg.Model;
 using Skyborg.Persistance.DataStore;
@@ -14,21 +15,19 @@ using System.Web;
 
 namespace Skyborg.Dialogs
 {
-    //[Serializable]
+    [Serializable]
     public class RootDialog : IDialog<object>
     {
         //[NonSerialized]
-        IntentModel intent = null;
+        //IntentModel intent = null;
 
-        String SenderId = string.Empty;
-
-        string[] Scopes = { CalendarService.Scope.Calendar };
-
-        public RootDialog(IntentModel intent, string senderId)
-        {
-            this.intent = intent;
-            this.SenderId = senderId;
-        }
+        //String SenderId = string.Empty;
+        
+        //public RootDialog(IntentModel intent, string senderId)
+        //{
+        //    this.intent = intent;
+        //    this.SenderId = senderId;
+        //}
 
         public async Task StartAsync(IDialogContext context)
         {
@@ -37,31 +36,33 @@ namespace Skyborg.Dialogs
 
         public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
         {
-            var reply = context.MakeMessage();
+            //var reply = context.MakeMessage();
 
-            await context.PostAsync(reply);
+            //await context.PostAsync(reply);
 
             var message = await result;
+            LUISAdaptor adaptor = new LUISAdaptor();
+            IntentModel intent = await adaptor.Execute(message.Text);
 
-            UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
+            if (intent != null && !string.IsNullOrEmpty(intent.ClassName))
             {
-                ClientId = BotConstants.GoogleClientId,
-                ClientSecret = BotConstants.GoogleClientSecret
+                context.UserData.SetValue<IntentModel>("Intent", intent);
+
+                switch (intent.ClassName)
+                {
+                    case "calendar":
+                        await context.Forward(new CalendarDialog(), this.ResumeAfterOptionDialog, message, CancellationToken.None);
+                        //context.Call(new CalendarDialog(), this.ResumeAfterOptionDialog);
+                        break;
+                    default:
+                        context.Wait(this.MessageReceivedAsync);
+                        break;
+                }
             }
-                                                            , Scopes
-                                                            , SenderId
-                                                            , CancellationToken.None
-                                                            , new EFDataStore()).Result;
-
-            switch (this.intent.ClassName)
+            else
             {
-                case "calendar":
-                     await context.Forward(new CalendarDialog(credential, this.intent), this.ResumeAfterOptionDialog, message, CancellationToken.None);
-                    //context.Call(new CalendarDialog(credential, this.intent), this.ResumeAfterOptionDialog);
-                    break;
-                default:
-                    context.Wait(this.MessageReceivedAsync);
-                    break;
+                await context.PostAsync("I'm not sure if I understand what you mean !!");
+                context.Wait(this.MessageReceivedAsync);
             }
             //context.Wait(this.MessageReceivedAsync);
         }
@@ -76,6 +77,7 @@ namespace Skyborg.Dialogs
             //{
             //    await context.PostAsync($"Error: {ex.Message}");
             //}
+            await context.PostAsync("Thanks for using our Calendar Services.");
             context.Wait(this.MessageReceivedAsync);
         }
     }
