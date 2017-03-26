@@ -239,24 +239,32 @@ namespace Skyborg.Dialogs
                         description = (eventItem.Description.Length > 50) ? eventItem.Description.Substring(0, 50) : eventItem.Description;
                     }
 
-                    string responseStatus = eventItem.Attendees.First(a => a.Self == true).ResponseStatus;
-
-                    switch(responseStatus)
+                    string responseStatus = string.Empty;
+                    if (eventItem.Attendees.FirstOrDefault(a => a.Self == true) != null)
                     {
-                        case "needsAction":
-                            responseStatus = "You have not responded yet";
-                            break;
-                        case "declined":
-                            responseStatus = "You have declined";
-                            break;
-                        case "tentative":
-                            responseStatus = "You have tentatively accepted";
-                            break;
-                        case "accepted":
-                            responseStatus = "You have accepted";
-                            break;
-                        default:
-                            break;
+                        responseStatus = eventItem.Attendees.First(a => a.Self == true).ResponseStatus;
+
+                        switch (responseStatus)
+                        {
+                            case "needsAction":
+                                responseStatus = "You have not responded yet";
+                                break;
+                            case "declined":
+                                responseStatus = "You have declined";
+                                break;
+                            case "tentative":
+                                responseStatus = "You have tentatively accepted";
+                                break;
+                            case "accepted":
+                                responseStatus = "You have accepted";
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        responseStatus = "You weren't invited";
                     }
 
                     attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, responseStatus,

@@ -44,24 +44,33 @@ namespace Skyborg.Dialogs
             LUISAdaptor adaptor = new LUISAdaptor();
             IntentModel intent = await adaptor.Execute(message.Text);
 
-            if (intent != null && !string.IsNullOrEmpty(intent.ClassName))
+            try
             {
-                context.UserData.SetValue<IntentModel>("Intent", intent);
-
-                switch (intent.ClassName)
+                if (intent != null && !string.IsNullOrEmpty(intent.ClassName))
                 {
-                    case "calendar":
-                        await context.Forward(new CalendarDialog(), this.ResumeAfterOptionDialog, message, CancellationToken.None);
-                        //context.Call(new CalendarDialog(), this.ResumeAfterOptionDialog);
-                        break;
-                    default:
-                        context.Wait(this.MessageReceivedAsync);
-                        break;
+                    context.UserData.SetValue<IntentModel>("Intent", intent);
+
+                    switch (intent.ClassName)
+                    {
+                        case "calendar":
+                            await context.Forward(new CalendarDialog(), this.ResumeAfterOptionDialog, message, CancellationToken.None);
+                            //context.Call(new CalendarDialog(), this.ResumeAfterOptionDialog);
+                            break;
+                        default:
+                            context.Wait(this.MessageReceivedAsync);
+                            break;
+                    }
+                }
+                else
+                {
+                    await context.PostAsync("I'm not sure if I understand what you mean !!");
+                    context.Wait(this.MessageReceivedAsync);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                await context.PostAsync("I'm not sure if I understand what you mean !!");
+                await context.PostAsync($"Ooops! something went wrong :(. But don't worry, I'm handling that exception and you can try again!");
+
                 context.Wait(this.MessageReceivedAsync);
             }
             //context.Wait(this.MessageReceivedAsync);
