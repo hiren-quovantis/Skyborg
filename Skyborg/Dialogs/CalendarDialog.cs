@@ -27,55 +27,48 @@ namespace Skyborg.Dialogs
     {
         string[] Scopes = { CalendarService.Scope.Calendar };
 
-       // UserCredential credential;
+        // UserCredential credential;
 
 
 
         public CalendarDialog()
         {
-            
+
         }
 
         public async Task StartAsync(IDialogContext context)
         {
             await context.PostAsync("Welcome to the Google Calendar!");
-            context.Wait(this.MessageReceivedAsync);
-        }
 
-        public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
-        {
             IntentModel intent;
             context.UserData.TryGetValue<IntentModel>("Intent", out intent);
-            
+
             LuisResult luisresult = new LuisResult();
             luisresult.Entities = intent.Model;
-
-            var message = await result;
-
 
             switch (intent.IntentName)
             {
                 case "list":
                     await GetEventList(context, luisresult);
-                    context.Done<object>(null);
-                    //context.Wait(this.MessageReceivedAsync);
+                    context.Wait(MessageReceivedAsync);
                     break;
                 case "create":
                     var eventDetail = HydrateEventObject(luisresult);
-
                     var createEventDialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptFieldsWithValues);
                     context.Call(createEventDialog, this.ResumeAfterEventDialog);
-                    //context.Done<object>(null);
 
                     break;
                 default:
                     await None(context);
                     context.Done<object>(null);
-                    //context.Wait(this.MessageReceivedAsync);
+
                     break;
             }
-            
+        }
 
+        public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> result)
+        {
+            context.Done<object>(null);
         }
 
         private CalendarModel HydrateEventObject(LuisResult result)
@@ -209,7 +202,7 @@ namespace Skyborg.Dialogs
         }
 
         #region "Private Helper"
-        
+
         private IList<Attachment> GetEventsByDateRange(CalendarAdapter adapter, DateTime startdate, DateTime enddate)
         {
             string response = string.Empty;
@@ -327,7 +320,7 @@ namespace Skyborg.Dialogs
 
             result.TryFindEntity(type, out value);
 
-            if(value != null)
+            if (value != null)
             {
                 return (value.Entity);
             }

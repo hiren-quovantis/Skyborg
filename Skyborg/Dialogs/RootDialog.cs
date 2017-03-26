@@ -53,8 +53,8 @@ namespace Skyborg.Dialogs
                     switch (intent.ClassName)
                     {
                         case "calendar":
-                            await context.Forward(new CalendarDialog(), this.ResumeAfterOptionDialog, message, CancellationToken.None);
-                            //context.Call(new CalendarDialog(), this.ResumeAfterOptionDialog);
+                            await context.Forward(new CalendarDialog(), this.ResumeAfterCalendarDialog, message, CancellationToken.None);
+                           // context.Call(new CalendarDialog(), this.ResumeAfterCalendarDialog);
                             break;
                         default:
                             context.Wait(this.MessageReceivedAsync);
@@ -76,18 +76,12 @@ namespace Skyborg.Dialogs
             //context.Wait(this.MessageReceivedAsync);
         }
 
-        private async Task ResumeAfterOptionDialog(IDialogContext context, IAwaitable<object> result)
+        private async Task ResumeAfterCalendarDialog(IDialogContext context, IAwaitable<object> result)
         {
-            //try
-            //{
-            //    var message = await result;
-            //}
-            //catch (Exception ex)
-            //{
-            //    await context.PostAsync($"Error: {ex.Message}");
-            //}
+            var r = await result; 
+
             await context.PostAsync("Thanks for using our Calendar Services.");
-            context.Wait(this.MessageReceivedAsync);
+           // context.Wait(this.MessageReceivedAsync);
         }
     }
 }
