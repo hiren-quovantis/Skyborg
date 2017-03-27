@@ -44,7 +44,7 @@ namespace Skyborg.Dialogs
             var message = await result;
             IntentModel intent;
 
-            if (message.Text.Contains(""))
+            if (message.Text.Contains("EventResponse"))
             {
                 string[] entity = message.Text.Split(' ');
                 intent = new IntentModel("calendar", "responseupdate");

@@ -53,22 +53,21 @@ namespace Skyborg.Dialogs
                     await GetEventList(context, luisresult);
                     context.Wait(MessageReceivedAsync);
                     break;
+
                 case "create":
                     var eventDetail = HydrateEventObject(luisresult);
                     var createEventDialog = FormDialog.FromForm(this.BuildCreateEventForm, FormOptions.PromptFieldsWithValues);
                     context.Call(createEventDialog, this.ResumeAfterEventDialog);
-
                     break;
 
                 case "responseupdate":
-
+                    await UpdateResponseStatus(context, luisresult);
                     context.Wait(MessageReceivedAsync);
                     break;
 
                 default:
                     await None(context);
                     context.Done<object>(null);
-
                     break;
             }
         }
@@ -174,6 +173,14 @@ namespace Skyborg.Dialogs
 
             await context.PostAsync("Please wait, while I Update your response");
 
+            if(adapter.UpdateEventConsent(FetchString(result, "eventid"), FetchString(result, "responsestatus")))
+            {
+                await context.PostAsync("Your event consent was update successfully");
+            }
+            else
+            {
+                await context.PostAsync("Even error occured, since this feature is still in beta.");
+            }
 
         }
 
@@ -366,6 +373,19 @@ namespace Skyborg.Dialogs
                 return (value.Entity);
             }
             return string.Empty;
+        }
+
+        private static int FetchInteger(LuisResult result, string type)
+        {
+            EntityRecommendation value = new EntityRecommendation();
+
+            result.TryFindEntity(type, out value);
+
+            if (value != null)
+            {
+                return Convert.ToInt32(value.Entity);
+            }
+            return 0;
         }
 
         #endregion

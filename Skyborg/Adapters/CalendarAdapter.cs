@@ -24,6 +24,25 @@ namespace Skyborg.Adapters
             });
         }
 
+        public Event GetEventsById(string id)
+        {
+            string response = string.Empty;
+
+            EventsResource.GetRequest request = service.Events.Get("primary", id);
+            return request.Execute();
+        }
+
+        public bool UpdateEventConsent(string eventId, string consentStatus)
+        {
+            Event objEvent = this.GetEventsById(eventId);
+            objEvent.Attendees.First(a => a.Self == true).ResponseStatus = consentStatus;
+
+
+            EventsResource.UpdateRequest request = service.Events.Update(objEvent, "primary", eventId);
+
+            return (request.Execute().Attendees.First(a => a.Self == true).ResponseStatus == consentStatus);
+        }
+
         public Events GetEventsByDateRange(DateTime startdate, DateTime enddate)
         {
             string response = string.Empty;
