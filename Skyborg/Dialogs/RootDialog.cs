@@ -1,6 +1,7 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Calendar.v3;
 using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Builder.Luis.Models;
 using Microsoft.Bot.Connector;
 using Skyborg.Adapters.NLP;
 using Skyborg.Common;
@@ -41,8 +42,21 @@ namespace Skyborg.Dialogs
             //await context.PostAsync(reply);
 
             var message = await result;
-            LUISAdaptor adaptor = new LUISAdaptor();
-            IntentModel intent = await adaptor.Execute(message.Text);
+            IntentModel intent;
+
+            if (message.Text.Contains(""))
+            {
+                string[] entity = message.Text.Split(' ');
+                intent = new IntentModel("calendar", "responseupdate");
+                intent.Model = new List<EntityRecommendation>();
+                intent.Model.Add(new EntityRecommendation("eventid", null, entity[1]));
+                intent.Model.Add(new EntityRecommendation("responsestatus", null, entity[2]));
+            }
+            else
+            {
+                LUISAdaptor adaptor = new LUISAdaptor();
+                intent = await adaptor.Execute(message.Text);
+            }
 
             try
             {

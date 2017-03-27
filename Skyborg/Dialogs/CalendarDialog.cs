@@ -46,6 +46,7 @@ namespace Skyborg.Dialogs
             LuisResult luisresult = new LuisResult();
             luisresult.Entities = intent.Model;
 
+
             switch (intent.IntentName)
             {
                 case "list":
@@ -58,6 +59,12 @@ namespace Skyborg.Dialogs
                     context.Call(createEventDialog, this.ResumeAfterEventDialog);
 
                     break;
+
+                case "responseupdate":
+
+                    context.Wait(MessageReceivedAsync);
+                    break;
+
                 default:
                     await None(context);
                     context.Done<object>(null);
@@ -149,6 +156,28 @@ namespace Skyborg.Dialogs
             //context.Wait(this.MessageReceivedAsync);
         }
 
+        public async Task UpdateResponseStatus(IDialogContext context, LuisResult result)
+        {
+            //UserCredential credential;
+            //context.UserData.TryGetValue<UserCredential>("Credential", out credential);
+            UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
+            {
+                ClientId = BotConstants.GoogleClientId,
+                ClientSecret = BotConstants.GoogleClientSecret
+            }
+                                                            , Scopes
+                                                            , context.Activity.From.Id
+                                                            , CancellationToken.None
+                                                            , new EFDataStore()).Result;
+
+            CalendarAdapter adapter = new CalendarAdapter(credential);
+
+            await context.PostAsync("Please wait, while I Update your response");
+
+
+        }
+
+
         public async Task CreateEvent(IDialogContext context, CalendarModel eventDetail)
         {
             UserCredential credential;
@@ -233,35 +262,8 @@ namespace Skyborg.Dialogs
                     }
 
                     string responseStatus = string.Empty;
-                    if (eventItem.Attendees.FirstOrDefault(a => a.Self == true) != null)
-                    {
-                        responseStatus = eventItem.Attendees.First(a => a.Self == true).ResponseStatus;
 
-                        switch (responseStatus)
-                        {
-                            case "needsAction":
-                                responseStatus = "You have not responded yet";
-                                break;
-                            case "declined":
-                                responseStatus = "You have declined";
-                                break;
-                            case "tentative":
-                                responseStatus = "You have tentatively accepted";
-                                break;
-                            case "accepted":
-                                responseStatus = "You have accepted";
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        responseStatus = "You weren't invited";
-                    }
-
-                    attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, responseStatus,
-                        new CardAction(ActionTypes.OpenUrl, "View Event", value: eventItem.HtmlLink)));
+                    attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, eventItem.Attendees, eventItem.Id));
 
                 }
             }
@@ -269,15 +271,54 @@ namespace Skyborg.Dialogs
             return attachments;
         }
 
-        private static Attachment GetHeroCard(string title, string subtitle, string text, CardAction cardAction)
+        private static Attachment GetHeroCard(string title, string subtitle, IList<EventAttendee> attendees, string eventId)
         {
+            string responseStatus = string.Empty;
+            List<CardAction> buttons = new List<CardAction>();
+
+            if (attendees.FirstOrDefault(a => a.Self == true) != null)
+            {
+                responseStatus = attendees.First(a => a.Self == true).ResponseStatus;
+
+                switch (responseStatus)
+                {
+                    case "needsAction":
+                        responseStatus = "You have not responded yet";
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
+                        break;
+                    case "declined":
+                        responseStatus = "You have declined";
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
+                        break;
+                    case "tentative":
+                        responseStatus = "You have tentatively accepted";
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
+                        break;
+                    case "accepted":
+                        responseStatus = "You have accepted";
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.PostBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                responseStatus = "You weren't invited";
+            }
+
             var heroCard = new HeroCard
             {
                 Title = title,
                 Subtitle = subtitle,
-                Text = text,
+                Text = responseStatus,
                 Images = null,
-                Buttons = new List<CardAction>() { cardAction },
+                Buttons = buttons
             };
 
             return heroCard.ToAttachment();

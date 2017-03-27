@@ -19,6 +19,12 @@ namespace Skyborg.Model
             this.Model = result.Entities;
         }
 
+        public IntentModel(string classname, string intentname)
+        {
+            this.ClassName = classname;
+            this.IntentName = intentname;
+        }
+
         private string OriginalIntent
         {
             set
