@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Http;
 using System.Web.Routing;
+using Hangfire;
 
 namespace Skyborg
 {
@@ -11,7 +12,9 @@ namespace Skyborg
     {
         protected void Application_Start()
         {
-            GlobalConfiguration.Configure(WebApiConfig.Register);
+            System.Web.Http.GlobalConfiguration.Configure(WebApiConfig.Register);
+
+            Hangfire.GlobalConfiguration.Configuration.UseSqlServerStorage("SkyborgDataModel");
         }
     }
 }
