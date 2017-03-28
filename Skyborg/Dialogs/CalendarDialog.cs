@@ -291,24 +291,24 @@ namespace Skyborg.Dialogs
                 {
                     case "needsAction":
                         responseStatus = "You have not responded yet";
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
                         break;
                     case "declined":
                         responseStatus = "You have declined";
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
                         break;
                     case "tentative":
                         responseStatus = "You have tentatively accepted";
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "Yes", value: string.Format("EventResponse {0} accepted", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
                         break;
                     case "accepted":
                         responseStatus = "You have accepted";
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
-                        buttons.Add(new CardAction(ActionTypes.PostBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "No", value: string.Format("EventResponse {0} declined", eventId)));
+                        buttons.Add(new CardAction(ActionTypes.ImBack, "Tentative", value: string.Format("EventResponse {0} tentative", eventId)));
                         break;
                     default:
                         break;

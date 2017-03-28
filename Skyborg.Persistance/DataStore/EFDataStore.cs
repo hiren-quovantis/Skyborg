@@ -84,9 +84,21 @@ namespace Skyborg.Persistance.DataStore
             }
         }
 
+        public Task<List<string>> GetAll<T>()
+        {
+            using (var context = new SkyborgDataModel())
+            {
+                var item = context.GoogleOAuthItem.Select<GoogleOAuthItem, string>(s => s.Key.Split('-')[1]).ToList();
+                return Task.FromResult(item);
+            }
+        }
+
+
         private static string GenerateStoredKey(string key, Type t)
         {
             return string.Format("{0}-{1}", t.FullName, key);
         }
+
+
     }
 }
