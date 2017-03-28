@@ -19,6 +19,7 @@ using Microsoft.Bot.Builder.FormFlow;
 using Skyborg.Common;
 using Skyborg.Persistance.DataStore;
 using System.Threading;
+using Google.Apis.Auth.OAuth2.Responses;
 
 namespace Skyborg.Dialogs
 {
@@ -27,13 +28,26 @@ namespace Skyborg.Dialogs
     {
         string[] Scopes = { CalendarService.Scope.Calendar };
 
-        // UserCredential credential;
-
-
-
         public CalendarDialog()
         {
 
+        }
+
+        public UserCredential GetGoogleCredentials(string userId, string conversationId)
+        {
+            UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
+            {
+                ClientId = BotConstants.GoogleClientId,
+                ClientSecret = BotConstants.GoogleClientSecret
+            }
+                                                            , Scopes
+                                                            , userId
+                                                            , CancellationToken.None
+                                                            , new EFDataStore()).Result;
+
+            EFDataStore.UpdateConversationId<TokenResponse>(userId, conversationId);
+
+            return credential;
         }
 
         public async Task StartAsync(IDialogContext context)
@@ -121,15 +135,7 @@ namespace Skyborg.Dialogs
         {
             //UserCredential credential;
             //context.UserData.TryGetValue<UserCredential>("Credential", out credential);
-            UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
-            {
-                ClientId = BotConstants.GoogleClientId,
-                ClientSecret = BotConstants.GoogleClientSecret
-            }
-                                                            , Scopes
-                                                            , context.Activity.From.Id
-                                                            , CancellationToken.None
-                                                            , new EFDataStore()).Result;
+            UserCredential credential = GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id);
 
             CalendarAdapter adapter = new CalendarAdapter(credential);
 
@@ -155,25 +161,54 @@ namespace Skyborg.Dialogs
             //context.Wait(this.MessageReceivedAsync);
         }
 
+        public async Task PushDailySchedule()
+        {
+            var users = new EFDataStore().GetAll<List<string>>();
+
+            foreach (var user in users)
+            {
+                string[] values = user.Key.Split('|');
+
+                await PushDailyScheduleToUser(values[1], user.ConversationId);
+            }
+
+        }
+
+        public async Task PushDailyScheduleToUser(string userId, string conversationId)
+        {
+            try
+            {
+                CalendarAdapter adapter = new CalendarAdapter(GetGoogleCredentials(userId, conversationId));
+
+                var userAccount = new ChannelAccount(userId);
+                var botAccount = new ChannelAccount(BotConstants.BotId);
+
+                var connector = new ConnectorClient(new Uri("http://localhost:57509"));
+                IMessageActivity message = Activity.CreateMessageActivity();
+                message.From = botAccount;
+                message.Recipient = userAccount;
+                message.Conversation = new ConversationAccount(id: conversationId);
+                message.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+                message.Attachments = this.GetEventsByDateRange(adapter, DateTime.Now.Date, DateTime.Now.Date.AddDays(1));
+
+                message.Text = "Here's your today's schedule";
+                message.Locale = "en-Us";
+
+                await connector.Conversations.SendToConversationAsync((Activity)message);
+            }
+            catch(Exception e)
+            {
+
+            }
+        }
+
         public async Task UpdateResponseStatus(IDialogContext context, LuisResult result)
         {
-            //UserCredential credential;
-            //context.UserData.TryGetValue<UserCredential>("Credential", out credential);
-            UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
-            {
-                ClientId = BotConstants.GoogleClientId,
-                ClientSecret = BotConstants.GoogleClientSecret
-            }
-                                                            , Scopes
-                                                            , context.Activity.From.Id
-                                                            , CancellationToken.None
-                                                            , new EFDataStore()).Result;
-
-            CalendarAdapter adapter = new CalendarAdapter(credential);
+            CalendarAdapter adapter = new CalendarAdapter(GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id));
 
             await context.PostAsync("Please wait, while I Update your response");
 
-            if(adapter.UpdateEventConsent(FetchString(result, "eventid"), FetchString(result, "responsestatus")))
+            if (adapter.UpdateEventConsent(FetchString(result, "eventid"), FetchString(result, "responsestatus")))
             {
                 await context.PostAsync("Your event consent was update successfully");
             }
@@ -187,24 +222,14 @@ namespace Skyborg.Dialogs
 
         public async Task CreateEvent(IDialogContext context, CalendarModel eventDetail)
         {
-            UserCredential credential;
 
             await context.PostAsync("Allow me to create an event for you (y)");
 
             if (!string.IsNullOrEmpty(eventDetail.Summary) && eventDetail.StartDate != DateTime.MinValue)
             {
 
-                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
-                {
-                    ClientId = BotConstants.GoogleClientId,
-                    ClientSecret = BotConstants.GoogleClientSecret
-                }
-                                                            , Scopes
-                                                            , context.Activity.From.Id
-                                                            , CancellationToken.None
-                                                            , new EFDataStore()).Result;
+                CalendarAdapter adapter = new CalendarAdapter(GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id));
 
-                CalendarAdapter adapter = new CalendarAdapter(credential);
                 Event calendarEvent = adapter.CreateEvent(eventDetail);
 
                 var reply = context.MakeMessage();

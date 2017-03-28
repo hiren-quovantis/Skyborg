@@ -39,5 +39,13 @@ namespace Skyborg.Common
                 return Convert.ToString(ConfigurationManager.AppSettings["GoogleClientSecret"]);
             }
         }
+
+        public static string BotId
+        {
+            get
+            {
+                return Convert.ToString(ConfigurationManager.AppSettings["BotId"]);
+            }
+        }
     }
 }

@@ -18,7 +18,7 @@ namespace Skyborg.Persistance.DataStore
             using (var context = new SkyborgDataModel())
             {
                 var objectContext = ((IObjectContextAdapter)context).ObjectContext;
-                await objectContext.ExecuteStoreCommandAsync("TRUNCATE TABLE [Items]");
+                await objectContext.ExecuteStoreCommandAsync("TRUNCATE TABLE [GoogleOAuthItems]");
             }
         }
 
@@ -84,19 +84,35 @@ namespace Skyborg.Persistance.DataStore
             }
         }
 
-        public Task<List<string>> GetAll<T>()
+        public static void UpdateConversationId<T>(string userId, string conversationId)
         {
             using (var context = new SkyborgDataModel())
             {
-                var item = context.GoogleOAuthItem.Select<GoogleOAuthItem, string>(s => s.Key.Split('-')[1]).ToList();
-                return Task.FromResult(item);
+                var generatedKey = GenerateStoredKey(userId, typeof(T));
+
+                var item = context.GoogleOAuthItem.SingleOrDefaultAsync(x => x.Key == generatedKey);
+
+                if (item != null)
+                {
+                    item.Result.ConversationId = conversationId;
+
+                    context.SaveChangesAsync();
+                }
+
             }
         }
 
+        public List<GoogleOAuthItem> GetAll<T>()
+        {
+            using (var context = new SkyborgDataModel())
+            {
+                return context.GoogleOAuthItem.Take(50).ToList<GoogleOAuthItem>();
+            }
+        }
 
         private static string GenerateStoredKey(string key, Type t)
         {
-            return string.Format("{0}-{1}", t.FullName, key);
+            return string.Format("{0}|{1}", t.FullName, key);
         }
 
 

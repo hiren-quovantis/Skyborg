@@ -11,6 +11,7 @@ using Skyborg.Persistance.DataStore;
 using Google.Apis.Calendar.v3;
 using Skyborg.Adapters.NLP;
 using Skyborg.Model;
+using Google.Apis.Auth.OAuth2.Responses;
 
 namespace Skyborg
 {
@@ -93,6 +94,7 @@ namespace Skyborg
                 // Handle conversation state changes, like members being added and removed
                 // Use Activity.MembersAdded and Activity.MembersRemoved and Activity.Action for info
                 // Not available in all channels
+                EFDataStore.UpdateConversationId<TokenResponse>(message.From.Id, message.Conversation.Id);
             }
             else if (message.Type == ActivityTypes.ContactRelationUpdate)
             {
@@ -105,6 +107,7 @@ namespace Skyborg
             }
             else if (message.Type == ActivityTypes.Ping)
             {
+                EFDataStore.UpdateConversationId<TokenResponse>(message.From.Id, message.Conversation.Id);
             }
 
             return null;

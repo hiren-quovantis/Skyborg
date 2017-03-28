@@ -13,6 +13,9 @@ namespace Skyborg.Model
         [MaxLength(100)]
         public string Key { get; set; }
 
+        [MaxLength(50)]
+        public string ConversationId { get; set; }
+
         [MaxLength(500)]
         public string Value { get; set; }
     }
