@@ -19,16 +19,6 @@ namespace Skyborg.Dialogs
     [Serializable]
     public class RootDialog : IDialog<object>
     {
-        //[NonSerialized]
-        //IntentModel intent = null;
-
-        //String SenderId = string.Empty;
-        
-        //public RootDialog(IntentModel intent, string senderId)
-        //{
-        //    this.intent = intent;
-        //    this.SenderId = senderId;
-        //}
 
         public async Task StartAsync(IDialogContext context)
         {
@@ -77,8 +67,9 @@ namespace Skyborg.Dialogs
                 }
                 else
                 {
-                    await context.PostAsync("I'm not sure if I understand what you mean !!");
-                    context.Wait(this.MessageReceivedAsync);
+                    var dialog = new SupportDialog();
+                    dialog.InitialMessage = message.Text;
+                    context.Call(dialog, AfterCommonResponseHandled);
                 }
             }
             catch (Exception ex)
@@ -88,6 +79,18 @@ namespace Skyborg.Dialogs
                 context.Wait(this.MessageReceivedAsync);
             }
             //context.Wait(this.MessageReceivedAsync);
+        }
+
+        private async Task AfterCommonResponseHandled(IDialogContext context, IAwaitable<bool> result)
+        {
+            var messageHandled = await result;
+
+            if (!messageHandled)
+            {
+                await context.PostAsync("I’m not sure what you want");
+            }
+
+            context.Wait(MessageReceivedAsync);
         }
 
         private async Task ResumeAfterCalendarDialog(IDialogContext context, IAwaitable<object> result)

@@ -159,19 +159,16 @@ namespace Skyborg.Dialogs
             {
                 await context.PostAsync("Please wait, while I retrieve your schedule");
 
-                var reply = context.MakeMessage();
-
-                reply.Attachments = this.GetEventsByDateRange(adapter, dateResult.Start.Value, dateResult.End.Value);
-                if(reply.Attachments != null)
+                IList<Attachment> attachments = this.GetEventsByDateRange(adapter, dateResult.Start.Value, dateResult.End.Value);
+                if(attachments != null)
                 {
+                    var reply = context.MakeMessage();
+                    reply.Attachments = attachments;
                     reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
-                }
-                else
-                {
-                    reply.Text = "You can relax for today";
+                    await context.PostAsync(reply);
                 }
 
-                await context.PostAsync(reply);
+                await context.PostAsync("You don't have any event enqueued. So relax !");
             }
             else
             {

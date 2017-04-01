@@ -190,6 +190,7 @@
     <Compile Include="Controllers\MessagesController.cs" />
     <Compile Include="Dialogs\CalendarDialog.cs" />
     <Compile Include="Dialogs\RootDialog.cs" />
+    <Compile Include="Dialogs\SupportDialog.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
