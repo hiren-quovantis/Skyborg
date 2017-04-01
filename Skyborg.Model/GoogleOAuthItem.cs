@@ -16,7 +16,10 @@ namespace Skyborg.Model
         [MaxLength(50)]
         public string ConversationId { get; set; }
 
-        [MaxLength(500)]
+        [MaxLength(100)]
+        public string GoogleUserId { get; set; }
+
+        [MaxLength(2000)]
         public string Value { get; set; }
     }
 }

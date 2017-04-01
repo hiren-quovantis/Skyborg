@@ -20,21 +20,27 @@ using Skyborg.Common;
 using Skyborg.Persistance.DataStore;
 using System.Threading;
 using Google.Apis.Auth.OAuth2.Responses;
+using Google.Apis.Plus.v1;
 
 namespace Skyborg.Dialogs
 {
     [Serializable]
     public class CalendarDialog : IDialog<object>
     {
-        string[] Scopes = { CalendarService.Scope.Calendar };
+        string[] Scopes = {
+                                CalendarService.Scope.Calendar,
+                                PlusService.Scope.PlusMe
+                          };
 
         public CalendarDialog()
         {
 
         }
 
-        public UserCredential GetGoogleCredentials(string userId, string conversationId)
+        public async Task<UserCredential> GetGoogleCredentials(string userId, string conversationId)
         {
+            EFDataStore dbstore = new EFDataStore();
+
             UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
             {
                 ClientId = BotConstants.GoogleClientId,
@@ -43,10 +49,18 @@ namespace Skyborg.Dialogs
                                                             , Scopes
                                                             , userId
                                                             , CancellationToken.None
-                                                            , new EFDataStore()).Result;
+                                                            , dbstore).Result;
+            
+            PlusService service = new PlusService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Skyborg",
+            });
 
-            EFDataStore.UpdateConversationId<TokenResponse>(userId, conversationId);
+            string googleUserId = service.People.Get("me").ExecuteAsync().Result.Id;
 
+            await dbstore.UpdateGoogleUserIdAsync<TokenResponse>(userId, googleUserId, conversationId);
+            
             return credential;
         }
 
@@ -135,7 +149,7 @@ namespace Skyborg.Dialogs
         {
             //UserCredential credential;
             //context.UserData.TryGetValue<UserCredential>("Credential", out credential);
-            UserCredential credential = GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id);
+            UserCredential credential = await GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id);
 
             CalendarAdapter adapter = new CalendarAdapter(credential);
 
@@ -147,8 +161,15 @@ namespace Skyborg.Dialogs
 
                 var reply = context.MakeMessage();
 
-                reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
                 reply.Attachments = this.GetEventsByDateRange(adapter, dateResult.Start.Value, dateResult.End.Value);
+                if(reply.Attachments != null)
+                {
+                    reply.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+                }
+                else
+                {
+                    reply.Text = "You can relax for today";
+                }
 
                 await context.PostAsync(reply);
             }
@@ -178,7 +199,7 @@ namespace Skyborg.Dialogs
         {
             try
             {
-                CalendarAdapter adapter = new CalendarAdapter(GetGoogleCredentials(userId, conversationId));
+                CalendarAdapter adapter = new CalendarAdapter(await GetGoogleCredentials(userId, conversationId));
 
                 var userAccount = new ChannelAccount(userId);
                 var botAccount = new ChannelAccount(BotConstants.BotId);
@@ -188,11 +209,17 @@ namespace Skyborg.Dialogs
                 message.From = botAccount;
                 message.Recipient = userAccount;
                 message.Conversation = new ConversationAccount(id: conversationId);
-                message.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+                
                 message.Attachments = this.GetEventsByDateRange(adapter, DateTime.Now.Date, DateTime.Now.Date.AddDays(1));
-
-                message.Text = "Here's your today's schedule";
-                message.Locale = "en-Us";
+                if (message.Attachments != null)
+                {
+                    message.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+                    message.Text = "Here's your today's schedule";
+                }
+                else
+                {
+                    message.Text = "You can relax for today";
+                }
 
                 await connector.Conversations.SendToConversationAsync((Activity)message);
             }
@@ -204,7 +231,7 @@ namespace Skyborg.Dialogs
 
         public async Task UpdateResponseStatus(IDialogContext context, LuisResult result)
         {
-            CalendarAdapter adapter = new CalendarAdapter(GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id));
+            CalendarAdapter adapter = new CalendarAdapter(await GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id));
 
             await context.PostAsync("Please wait, while I Update your response");
 
@@ -228,9 +255,11 @@ namespace Skyborg.Dialogs
             if (!string.IsNullOrEmpty(eventDetail.Summary) && eventDetail.StartDate != DateTime.MinValue)
             {
 
-                CalendarAdapter adapter = new CalendarAdapter(GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id));
+                CalendarAdapter adapter = new CalendarAdapter(await GetGoogleCredentials(context.Activity.From.Id, context.Activity.Conversation.Id));
 
-                Event calendarEvent = adapter.CreateEvent(eventDetail);
+                string creatorId = (new EFDataStore()).GetById<TokenResponse>(context.Activity.From.Id).GoogleUserId;
+
+                Event calendarEvent = adapter.CreateEvent(eventDetail, creatorId);
 
                 var reply = context.MakeMessage();
 
@@ -269,10 +298,12 @@ namespace Skyborg.Dialogs
             string response = string.Empty;
 
             Events events = adapter.GetEventsByDateRange(startdate, enddate);
-            IList<Attachment> attachments = new List<Attachment>();
+            IList<Attachment> attachments = null;
 
             if (events.Items != null && events.Items.Count > 0)
             {
+                attachments = new List<Attachment>();
+
                 foreach (var eventItem in events.Items)
                 {
                     string eventstartdate = eventItem.Start.DateTime.ToString();

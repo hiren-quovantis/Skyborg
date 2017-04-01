@@ -59,7 +59,7 @@ namespace Skyborg.Adapters
             return request.Execute();
         }
 
-        public Event CreateEvent(CalendarModel calendarDetail)
+        public Event CreateEvent(CalendarModel calendarDetail, string creatorId)
         {
             Event calendarEvent = new Event();
 
@@ -80,9 +80,14 @@ namespace Skyborg.Adapters
             if (!string.IsNullOrEmpty(calendarDetail.Attendees))
             {
                 calendarEvent.Attendees = new List<EventAttendee>();
+
+                EventAttendee eventAttendee = new EventAttendee();
+                eventAttendee.Id = creatorId;
+                calendarEvent.Attendees.Add(eventAttendee);
+                
                 foreach (string attendee in calendarDetail.Attendees.Split(','))
                 {
-                    EventAttendee eventAttendee = new EventAttendee();
+                    eventAttendee = new EventAttendee();
                     eventAttendee.Email = attendee.Trim();
                     calendarEvent.Attendees.Add(eventAttendee);
                 }

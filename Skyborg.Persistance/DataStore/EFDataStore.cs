@@ -64,23 +64,50 @@ namespace Skyborg.Persistance.DataStore
                 throw new ArgumentException("Key MUST have a value");
             }
 
+            try
+            {
+                using (var context = new SkyborgDataModel())
+                {
+                    var generatedKey = GenerateStoredKey(key, typeof(T));
+                    string json = JsonConvert.SerializeObject(value);
+
+                    var item = await context.GoogleOAuthItem.SingleOrDefaultAsync(x => x.Key == generatedKey);
+
+                    if (item == null)
+                    {
+                        context.GoogleOAuthItem.Add(new GoogleOAuthItem { Key = generatedKey, Value = json });
+                    }
+                    else
+                    {
+                        item.Value = json;
+                    }
+
+                    await context.SaveChangesAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
+
+        }
+
+        public async Task UpdateGoogleUserIdAsync<T>(string userId, string googleUserId, string conversationId)
+        {
             using (var context = new SkyborgDataModel())
             {
-                var generatedKey = GenerateStoredKey(key, typeof(T));
-                string json = JsonConvert.SerializeObject(value);
+                var generatedKey = GenerateStoredKey(userId, typeof(T));
 
                 var item = await context.GoogleOAuthItem.SingleOrDefaultAsync(x => x.Key == generatedKey);
 
-                if (item == null)
+                if (item != null)
                 {
-                    context.GoogleOAuthItem.Add(new GoogleOAuthItem { Key = generatedKey, Value = json });
-                }
-                else
-                {
-                    item.Value = json;
+                    item.GoogleUserId = googleUserId;
+                    item.ConversationId = (conversationId == null) ? item.ConversationId : conversationId;
+
+                    await context.SaveChangesAsync();
                 }
 
-                await context.SaveChangesAsync();
             }
         }
 
@@ -92,7 +119,7 @@ namespace Skyborg.Persistance.DataStore
 
                 var item = context.GoogleOAuthItem.SingleOrDefaultAsync(x => x.Key == generatedKey);
 
-                if (item != null)
+                if (item.Result != null)
                 {
                     item.Result.ConversationId = conversationId;
 
@@ -107,6 +134,20 @@ namespace Skyborg.Persistance.DataStore
             using (var context = new SkyborgDataModel())
             {
                 return context.GoogleOAuthItem.Take(50).ToList<GoogleOAuthItem>();
+            }
+        }
+
+        public GoogleOAuthItem GetById<T>(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentException("Key MUST have a value");
+            }
+
+            using (var context = new SkyborgDataModel())
+            {
+                var generatedKey = GenerateStoredKey(key, typeof(T));
+                return context.GoogleOAuthItem.FirstOrDefault(x => x.Key == generatedKey);
             }
         }
 
