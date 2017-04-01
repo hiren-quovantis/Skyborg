@@ -25,6 +25,8 @@ namespace Skyborg.Model
         //public DateTime EndTime { get; set;}
 
         [Prompt("Please enter valid Email for {&}")]
+        [Pattern(@"^((\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*)*([,])*)*$")]
         public string Attendees { get; set; }
+        
     }
 }

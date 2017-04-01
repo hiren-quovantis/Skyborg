@@ -250,7 +250,7 @@ namespace Skyborg.Dialogs
         public async Task CreateEvent(IDialogContext context, CalendarModel eventDetail)
         {
 
-            await context.PostAsync("Allow me to create an event for you (y)");
+            await context.PostAsync("Creating event for you. Give me a moment ...");
 
             if (!string.IsNullOrEmpty(eventDetail.Summary) && eventDetail.StartDate != DateTime.MinValue)
             {
@@ -287,6 +287,7 @@ namespace Skyborg.Dialogs
             return new FormBuilder<CalendarModel>()
                         .Message("Creating Event for You . . .")
                         .AddRemainingFields()
+                        .Confirm("Do you want to create event {Summary} at {Location} for {StartDate} {StartTime} with {Attendees}?")
                         .OnCompletion(createEventtemp)
                         .Build();
         }
