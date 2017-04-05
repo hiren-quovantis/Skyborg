@@ -21,6 +21,7 @@ using Skyborg.Persistance.DataStore;
 using System.Threading;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Plus.v1;
+using Google.Apis.Auth.OAuth2.Flows;
 
 namespace Skyborg.Dialogs
 {
@@ -40,29 +41,40 @@ namespace Skyborg.Dialogs
         public async Task<UserCredential> GetGoogleCredentials(string userId, string conversationId)
         {
             EFDataStore dbstore = new EFDataStore();
+            UserCredential credential = null;
 
-            UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
+            try
             {
-                ClientId = BotConstants.GoogleClientId,
-                ClientSecret = BotConstants.GoogleClientSecret
+
+                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
+                {
+                    ClientId = BotConstants.GoogleClientId,
+                    ClientSecret = BotConstants.GoogleClientSecret
+                }
+                                                                , Scopes
+                                                                , userId
+                                                                , CancellationToken.None
+                                                                , dbstore);
+
+                PlusService service = new PlusService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Skyborg",
+                });
+
+                string googleUserId = (await service.People.Get("me").ExecuteAsync()).Id;
+
+                await dbstore.UpdateGoogleUserIdAsync<TokenResponse>(userId, googleUserId, conversationId);
+
+
             }
-                                                            , Scopes
-                                                            , userId
-                                                            , CancellationToken.None
-                                                            , dbstore).Result;
-            
-            PlusService service = new PlusService(new BaseClientService.Initializer()
+            catch (Exception e)
             {
-                HttpClientInitializer = credential,
-                ApplicationName = "Skyborg",
-            });
+                throw;
+            }
 
-            string googleUserId = service.People.Get("me").ExecuteAsync().Result.Id;
-
-            await dbstore.UpdateGoogleUserIdAsync<TokenResponse>(userId, googleUserId, conversationId);
-            
             return credential;
-        }
+            }
 
         public async Task StartAsync(IDialogContext context)
         {

@@ -74,7 +74,8 @@ namespace Skyborg.Dialogs
             }
             catch (Exception ex)
             {
-                await context.PostAsync($"Ooops! something went wrong :(. But don't worry, I'm handling that exception and you can try again!");
+                await context.PostAsync($"Ooops! something went wrong :(. But don't worry, I'm handling that exception and you can try again!" + ex.Message + ex.StackTrace);
+                
 
                 context.Wait(this.MessageReceivedAsync);
             }

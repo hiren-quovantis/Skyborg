@@ -14,12 +14,12 @@ namespace Skyborg
     {
         public void Configuration(IAppBuilder app)
         {
-            app.UseHangfireDashboard("/hangfire", new DashboardOptions());
+            //app.UseHangfireDashboard("/hangfire", new DashboardOptions());
 
-            var manager = new RecurringJobManager();
-            manager.AddOrUpdate("calendarSchedule", Job.FromExpression(() => new CalendarDialog().PushDailySchedule()), "*/2 * * * *");
+            //var manager = new RecurringJobManager();
+            //manager.AddOrUpdate("calendarSchedule", Job.FromExpression(() => new CalendarDialog().PushDailySchedule()), "*/2 * * * *");
 
-            app.UseHangfireServer();
+            //app.UseHangfireServer();
             
         }
     }
