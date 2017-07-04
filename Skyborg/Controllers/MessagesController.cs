@@ -12,18 +12,21 @@ using Google.Apis.Calendar.v3;
 using Skyborg.Adapters.NLP;
 using Skyborg.Model;
 using Google.Apis.Auth.OAuth2.Responses;
+using Skyborg.Dialogs.OAuth;
+using System.Web.Http.Description;
 
 namespace Skyborg
 {
     [BotAuthentication]
     public class MessagesController : ApiController
     {
-        
+
         /// <summary>
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
         /// </summary>
-        public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
+       [ResponseType(typeof(void))]
+        public virtual async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
             string[] scopes = { CalendarService.Scope.Calendar };
             
@@ -32,8 +35,12 @@ namespace Skyborg
                 // await Conversation.SendAsync(activity, () => new CalendarDialog(user));   
 
                 //GoogleWebAuthorizationBroker.AuthorizeAsync()
-                
-                await Conversation.SendAsync(activity, () => new RootDialog());
+
+                // await Conversation.SendAsync(activity, () => new RootDialog());
+
+                //await Conversation.SendAsync(activity, () => new GoogleAuthDialog());
+
+                await Conversation.SendAsync(activity, () => GoogleAuthDialog.dialog);
 
                 //await Conversation.SendAsync(activity, () => new RootDialog(intent, activity.From.Id));
 
