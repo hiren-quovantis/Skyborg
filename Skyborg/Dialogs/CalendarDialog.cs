@@ -22,6 +22,7 @@ using System.Threading;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Plus.v1;
 using Google.Apis.Auth.OAuth2.Flows;
+using static Google.Apis.Calendar.v3.Data.Event;
 
 namespace Skyborg.Dialogs
 {
@@ -335,8 +336,7 @@ namespace Skyborg.Dialogs
                     }
 
                     string responseStatus = string.Empty;
-
-                    attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, eventItem.Attendees, eventItem.Id));
+                    attachments.Add(GetHeroCard(eventItem.Summary, (eventItem.Location != null) ? "At " + eventItem.Location : string.Empty, eventItem.Attendees, eventItem.Creator, eventItem.Id));
 
                 }
             }
@@ -344,12 +344,16 @@ namespace Skyborg.Dialogs
             return attachments;
         }
 
-        private static Attachment GetHeroCard(string title, string subtitle, IList<EventAttendee> attendees, string eventId)
+        private static Attachment GetHeroCard(string title, string subtitle, IList<EventAttendee> attendees, CreatorData creator, string eventId)
         {
             string responseStatus = string.Empty;
             List<CardAction> buttons = new List<CardAction>();
 
-            if (attendees.FirstOrDefault(a => a.Self == true) != null)
+            if (creator.Self.HasValue)
+            {
+                responseStatus = "You created the event";
+            }
+            else if (attendees.FirstOrDefault(a => a.Self == true) != null)
             {
                 responseStatus = attendees.First(a => a.Self == true).ResponseStatus;
 

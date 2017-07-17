@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using Microsoft.Bot.Builder.ConnectorEx;
 using System.Web.Helpers;
 
 namespace Skyborg.Common.OAuth
@@ -89,15 +90,31 @@ namespace Skyborg.Common.OAuth
 
         private static string GetOAuthCallBack(ConversationReference conversationReference, string googleOauthCallback)
         {
-
+            //conversationReference.
             BotAuth botdata = new BotAuth();
             botdata.UserId = TokenEncoder(conversationReference.User.Id);
             botdata.BotId = TokenEncoder(conversationReference.Bot.Id);
             botdata.ConversationId = TokenEncoder(conversationReference.Conversation.Id);
             botdata.ServiceUrl = TokenEncoder(conversationReference.ServiceUrl);
-            botdata.ChannelId = TokenEncoder(conversationReference.ChannelId);
+            botdata.ChannelId = (conversationReference.ChannelId);
+            botdata.ActivityId = TokenEncoder(conversationReference.ActivityId);
+
 
             return Base64Encode(JsonConvert.SerializeObject(botdata));
+
+            //return Base64Encode(JsonConvert.SerializeObject(conversationReference));
+            //try
+            //{
+            //    return conversationReference.GZipSerialize();
+            //}
+            //catch (Exception e)
+            //{
+            //    return string.Empty;
+            //}
+            //finally
+            //{
+
+            //}
         }
 
         public static string Base64Encode(string plainText)

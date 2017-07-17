@@ -12,6 +12,7 @@ namespace Skyborg.Model
         public string ConversationId { get; set; }
         public string ServiceUrl { get; set; }
         public string ChannelId { get; set; }
+        public string ActivityId { get; set; }
 
     }
 }

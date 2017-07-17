@@ -30,11 +30,11 @@ namespace Skyborg.Dialogs.OAuth
                     return regex.IsMatch(msg.Text);
                 }, (ctx, msg) =>
                 {
-                    // User wants to login, send the message to Facebook Auth Dialog
+                    // User wants to login, send the message to Google Auth Dialog
                     return Chain.ContinueWith(new GoogleAuthDialog(),
                                 async (context, res) =>
                                 {
-                                    // The Facebook Auth Dialog completed successfully and returend the access token in its results
+                                    // The Google Auth Dialog completed successfully and returend the access token in its results
                                     var token = await res;
                                     var valid = await GoogleAuthHelper.ValidateAccessToken(token);
                                     var name = await GoogleAuthHelper.GetFacebookProfileName(token);
@@ -57,13 +57,14 @@ namespace Skyborg.Dialogs.OAuth
                 {
                     string token;
                     string name = string.Empty;
-                    if (ctx.PrivateConversationData.TryGetValue(AuthTokenKey, out token) && ctx.UserData.TryGetValue("name", out name))
+                    if (ctx.PrivateConversationData.TryGetValue(AuthTokenKey, out token))// && ctx.UserData.TryGetValue("name", out name))
                     {
-                        var validationTask = GoogleAuthHelper.ValidateAccessToken(token);
-                        validationTask.Wait();
-                        if (validationTask.IsCompleted && validationTask.Result)
+                        var isValid = GoogleAuthHelper.ValidateAccessToken(token);
+                        isValid.Wait();
+
+                        if (isValid.IsCompleted && isValid.Result)
                         {
-                            return Chain.Return($"Your are logged in as: {name}");
+                            return Chain.Return($"Your are logged in as: Hiren");
                         }
                         else
                         {
@@ -72,7 +73,7 @@ namespace Skyborg.Dialogs.OAuth
                     }
                     else
                     {
-                        return Chain.Return("Say \"login\" when you want to login to Facebook!");
+                        return Chain.Return("Say \"login\" when you want to login to Google!");
                     }
                 })
             ).Unwrap().PostToUser();
@@ -93,12 +94,21 @@ namespace Skyborg.Dialogs.OAuth
             var msg = await (argument);
             if (msg.Text.StartsWith("token:"))
             {
-                // Dialog is resumed by the OAuth callback and access token
-                // is encoded in the message.Text
-                var token = msg.Text.Remove(0, "token:".Length);
-                context.PrivateConversationData.SetValue(AuthTokenKey, token);
-                context.Done(token);
-            }
+                try
+                {
+                    // Dialog is resumed by the OAuth callback and access token
+                    // is encoded in the message.Text
+                    var token = msg.Text.Remove(0, "token:".Length);
+                    context.PrivateConversationData.SetValue(AuthTokenKey, token);
+                    context.Wait(this.MessageReceivedAsync);
+                }
+                catch (Exception e)
+                {
+
+                }
+
+               // context.Done<object>(null);
+                }
             else
             {
                 await LogIn(context);
@@ -116,10 +126,11 @@ namespace Skyborg.Dialogs.OAuth
             if (!context.PrivateConversationData.TryGetValue(AuthTokenKey, out token))
             {
                 var conversationReference = context.Activity.ToConversationReference();
+                conversationReference.ActivityId = context.Activity.Id;
 
                 context.PrivateConversationData.SetValue("persistedCookie", conversationReference);
 
-                // sending the sigin card with Facebook login url
+                // sending the sigin card with Google login url
                 var reply = context.MakeMessage();
                 var googleLoginUrl = GoogleAuthHelper.GetGoogleLoginURL(conversationReference, OauthCallback.ToString());
                 reply.Text = "Please login in using this card";
