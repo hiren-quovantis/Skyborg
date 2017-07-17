@@ -37,9 +37,7 @@ namespace Skyborg.Dialogs.OAuth
                                     // The Google Auth Dialog completed successfully and returend the access token in its results
                                     var token = await res;
                                     var valid = await GoogleAuthHelper.ValidateAccessToken(token);
-                                    var name = await GoogleAuthHelper.GetFacebookProfileName(token);
-                                    context.UserData.SetValue("name", name);
-                                    return Chain.Return($"Your are logged in as: {name}");
+                                    return Chain.Return($"Your are logged in as: Hiren");
                                 });
                 }),
                 new Case<IMessageActivity, IDialog<string>>((msg) =>
@@ -62,9 +60,9 @@ namespace Skyborg.Dialogs.OAuth
                         var isValid = GoogleAuthHelper.ValidateAccessToken(token);
                         isValid.Wait();
 
-                        if (isValid.IsCompleted && isValid.Result)
+                        if (isValid.IsCompleted && !string.IsNullOrEmpty(isValid.Result))
                         {
-                            return Chain.Return($"Your are logged in as: Hiren");
+                            return Chain.Return($"Your are logged in as: {isValid.Result}");
                         }
                         else
                         {

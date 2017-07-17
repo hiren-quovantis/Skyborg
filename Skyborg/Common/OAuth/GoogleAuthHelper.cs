@@ -39,6 +39,9 @@ namespace Skyborg.Common.OAuth
         public string Id { get; set; }
         [JsonProperty(PropertyName = "name")]
         public string Name { get; set; }
+
+        [JsonProperty(PropertyName = "email")]
+        public string EMail { get; set; }
     }
 
     public class GoogleAuthHelper
@@ -68,26 +71,15 @@ namespace Skyborg.Common.OAuth
             return await GooglePostRequest<AcessToken>(uri, content);
         }
 
-        public static async Task<bool> ValidateAccessToken(string accessToken)
+        public static async Task<string> ValidateAccessToken(string accessToken)
         {
-            var uri = GetUri("https://graph.facebook.com/debug_token",
-                Tuple.Create("input_token", accessToken),
-                Tuple.Create("access_token", $"{BotConstants.GoogleClientId}|{BotConstants.GoogleClientSecret}"));
-
-            var res = await GoogleRequest<object>(uri).ConfigureAwait(false);
-            return (((dynamic)res)?.data)?.is_valid;
-        }
-
-        public static async Task<string> GetFacebookProfileName(string accessToken)
-        {
-            var uri = GetUri("https://graph.facebook.com/v2.6/me",
-                Tuple.Create("fields", "id,name"),
+            var uri = GetUri("https://www.googleapis.com/oauth2/v3/tokeninfo",
                 Tuple.Create("access_token", accessToken));
 
-            var res = await GoogleRequest<GoogleProfile>(uri);
-            return res.Name;
+            var res = await GoogleRequest<GoogleProfile>(uri).ConfigureAwait(false);
+            return res.EMail;
         }
-
+        
         private static string GetOAuthCallBack(ConversationReference conversationReference, string googleOauthCallback)
         {
             //conversationReference.
@@ -122,7 +114,6 @@ namespace Skyborg.Common.OAuth
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             return System.Convert.ToBase64String(plainTextBytes);
         }
-
 
         public static string Base64Decode(string base64EncodedData)
         {
