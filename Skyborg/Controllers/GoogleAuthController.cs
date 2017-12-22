@@ -40,29 +40,9 @@ namespace Skyborg.Controllers
 
                 var conversationReference = address.ToConversationReference();
                 var msg = conversationReference.GetPostToUserMessage();
-
-               // var conversationReference = new ResumptionCookie(address, address.UserId, false, "en-GB");
-               // var msg = conversationReference.GetMessage();
-
-
-                // ConversationReference conversationReference = JsonConvert.DeserializeObject<ConversationReference>(GoogleAuthHelper.Base64Decode(state));
-                // Exchange the Auth code with Access token
-                // var resumptionCookie = new ResumptionCookie(FacebookHelpers.TokenDecoder(userId), FacebookHelpers.TokenDecoder(botId), FacebookHelpers.TokenDecoder(conversationId), channelId, FacebookHelpers.TokenDecoder(serviceUrl), locale); 
-
+                
                 var accessToken = await GoogleAuthHelper.ExchangeCodeForAccessToken(code, GoogleAuthDialog.OauthCallback.ToString());
-
-                //ChannelAccount botaccount = new ChannelAccount(GoogleAuthHelper.TokenDecoder(botdata.BotId));
-                //ChannelAccount useraccount = new ChannelAccount(GoogleAuthHelper.TokenDecoder(botdata.UserId));
-                //ConversationAccount convrersationaccount = new ConversationAccount(false, GoogleAuthHelper.TokenDecoder(botdata.ConversationId));
-
-                //ConversationReference conversationReference = new ConversationReference(GoogleAuthHelper.TokenDecoder(botdata.ActivityId), useraccount, botaccount, convrersationaccount,
-                //        (botdata.ChannelId), GoogleAuthHelper.TokenDecoder(botdata.ServiceUrl));
-                // Create the message that is send to conversation to resume the login flow
-
-                // var conversationReference = ConversationReferenceHelpers.GZipDeserialize(state);
-
-
-
+                
                 msg.Text = $"token:{accessToken.AccessToken}";
 
                 // Conversation.ResumeAsync()

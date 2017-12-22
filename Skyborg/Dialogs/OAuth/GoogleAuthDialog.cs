@@ -36,20 +36,9 @@ namespace Skyborg.Dialogs.OAuth
                                 {
                                     // The Google Auth Dialog completed successfully and returend the access token in its results
                                     var token = await res;
-                                    var valid = await GoogleAuthHelper.ValidateAccessToken(token);
-                                    return Chain.Return($"Your are logged in as: Hiren");
+                                    var email = await GoogleAuthHelper.ValidateAccessToken(token);
+                                    return Chain.Return($"Your are logged in as:  {email}");
                                 });
-                }),
-                new Case<IMessageActivity, IDialog<string>>((msg) =>
-                {
-                    var regex = new Regex("^logout", RegexOptions.IgnoreCase);
-                    return regex.IsMatch(msg.Text);
-                }, (ctx, msg) =>
-                {
-                    // Clearing user related data upon logout
-                    ctx.PrivateConversationData.RemoveValue(AuthTokenKey);
-                    ctx.UserData.RemoveValue("name");
-                    return Chain.Return($"Your are logged out!");
                 }),
                 new DefaultCase<IMessageActivity, IDialog<string>>((ctx, msg) =>
                 {
@@ -111,6 +100,43 @@ namespace Skyborg.Dialogs.OAuth
             {
                 await LogIn(context);
             }
+        }
+
+        private async Task GetAccessToken(IDialogContext context)
+        {
+            string token;
+
+            if (context.PrivateConversationData.TryGetValue(AuthTokenKey, out token))// && ctx.UserData.TryGetValue("name", out name))
+            {
+                var isValid = GoogleAuthHelper.ValidateAccessToken(token);
+                isValid.Wait();
+
+                if (isValid.IsCompleted && !string.IsNullOrEmpty(isValid.Result))
+                {
+                    await context.PostAsync($"Your are logged in as: {isValid.Result}");
+                }
+                else
+                {
+                    await LogIn(context);
+                }
+            }
+            else
+            {
+                await context.PostAsync("Say \"login\" when you want to login to Google!");
+            }
+            context.Wait(MessageReceivedAsync);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        private async Task Logout(IDialogContext context)
+        {
+            context.PrivateConversationData.RemoveValue(AuthTokenKey);
+            await context.PostAsync($"Your are logged out!");
+            context.Wait(MessageReceivedAsync);
         }
 
         /// <summary>
